@@ -11,7 +11,7 @@ import (
 )
 
 // Home will return the config file(if found) in the home directory
-func Home(file) (string, []byte, error) {
+func Home(file string) (string, []byte, error) {
 	dir, err := homedir.Dir()
 	if err != nil {
 		return "", []byte{}, err
