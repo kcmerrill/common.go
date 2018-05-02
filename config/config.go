@@ -11,14 +11,13 @@ import (
 )
 
 // Home will return the config file(if found) in the home directory
-func Home(file, extension string) (string, []byte, error) {
+func Home(file) (string, []byte, error) {
 	dir, err := homedir.Dir()
 	if err != nil {
 		return "", []byte{}, err
 	}
 
-	fmt.Println("config:", dir, file, extension)
-	contents, readErr := ioutil.ReadFile(dir + string(os.PathSeparator) + file + "." + extension)
+	contents, readErr := ioutil.ReadFile(dir + string(os.PathSeparator) + file)
 	if readErr != nil {
 		return "", []byte{}, readErr
 	}
