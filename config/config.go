@@ -6,7 +6,25 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	homedir "github.com/mitchellh/go-homedir"
 )
+
+// Home will return the config file(if found) in the home directory
+func Home(file, extension string) (string, []byte, error) {
+	dir, err := homedir.Dir()
+	if err != nil {
+		return "", []byte{}, err
+	}
+
+	fmt.Println("config:", dir, file, extension)
+	contents, readErr := ioutil.ReadFile(dir + string(os.PathSeparator) + file + "." + extension)
+	if readErr != nil {
+		return "", []byte{}, readErr
+	}
+
+	return dir, contents, nil
+}
 
 // FindAndCombine will go up directories looking for a file + extension and combine all the files into one []byte{}
 func FindAndCombine(file, extension string) (string, []byte, error) {
