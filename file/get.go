@@ -1,4 +1,4 @@
-package common
+package file
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 )
 
 // Get will return a url in []bytes
-func HTTPGet(url string) ([]byte, error) {
+func Get(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 
 	if err != nil || resp.StatusCode != 200 {
