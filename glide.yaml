@@ -1,3 +1,2 @@
 package: github.com/kcmerrill/common.go
-import:
-- package: github.com/mitchellh/go-homedir
+import: []

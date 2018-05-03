@@ -26,18 +26,40 @@ func Home(file string) (string, []byte, error) {
 }
 
 // FindAndCombine will go up directories looking for a file + extension and combine all the files into one []byte{}
-func FindAndCombine(file, extension string) (string, []byte, error) {
+func FindAndCombine(query, extension string) (string, []byte, error) {
 	// Grab the current directory
-	dir, err := os.Getwd()
+	currentDir, err := os.Getwd()
 	combinedContents := []byte{}
 	if err == nil {
 		// Just keep going ...
 		for {
 			// Did we find a bunch of config files?
+
+			dir := ""
+			file := query
+			if strings.Contains(query, string(os.PathSeparator)) {
+				path := strings.SplitN(query, string(os.PathSeparator), 2)
+				dir = string(os.PathSeparator) + path[0] + string(os.PathSeparator)
+				file = path[1]
+			}
+
 			patterns := []string{
-				dir + "/" + file + "." + extension,
-				dir + "/." + file + "/*" + file + "." + extension,
-				dir + "/" + file + "/*" + file + "." + extension}
+				currentDir + "/" + file + "." + extension,
+				currentDir + "/." + file + "/*" + file + "." + extension,
+				currentDir + "/*" + file + "." + extension,
+				currentDir + "/" + file + "/*" + file + "." + extension}
+
+			if dir != "" {
+				patterns = []string{
+					currentDir + dir + file + "." + extension,
+					currentDir + dir + "." + file + "/*" + file + "." + extension,
+					currentDir + dir + "*" + file + "." + extension,
+					currentDir + dir + file + "/*" + file + "." + extension}
+			}
+
+			fmt.Println(dir, file)
+			fmt.Println("patterns:", patterns)
+
 			for _, pattern := range patterns {
 				if configFiles, filesErr := filepath.Glob(pattern); filesErr == nil && len(configFiles) > 0 {
 					for _, configFile := range configFiles {
@@ -47,12 +69,12 @@ func FindAndCombine(file, extension string) (string, []byte, error) {
 							combinedContents = append(combinedContents, contents...)
 						}
 					}
-					return dir, combinedContents, nil
+					return currentDir, combinedContents, nil
 				}
 			}
 
-			dir = path.Dir(dir)
-			if dir == "/" {
+			currentDir = path.Dir(currentDir)
+			if currentDir == "/" {
 				// We've gone too far ...
 				break
 			}
