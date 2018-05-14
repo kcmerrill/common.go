@@ -4,80 +4,64 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
-
-	homedir "github.com/mitchellh/go-homedir"
+	"strings"
 )
 
-// Home will return the config file(if found) in the home directory
-func Home(file string) (string, []byte, error) {
-	dir, err := homedir.Dir()
-	if err != nil {
-		return "", []byte{}, err
-	}
-
-	contents, readErr := ioutil.ReadFile(dir + string(os.PathSeparator) + file)
-	if readErr != nil {
-		return "", []byte{}, readErr
-	}
-
-	return dir, contents, nil
-}
-
 // FindAndCombine will go up directories looking for a file + extension and combine all the files into one []byte{}
-func FindAndCombine(query, extension string) (string, []byte, error) {
+func FindAndCombine(currentDir, query, extension string) (string, []byte, error) {
 	// Grab the current directory
-	currentDir, err := os.Getwd()
 	combinedContents := []byte{}
-	if err == nil {
-		// Just keep going ...
-		for {
-			// Did we find a bunch of config files?
+	// Just keep going ...
+	for {
+		// Did we find a bunch of config files?
 
-			dir := ""
-			file := query
-			if strings.Contains(query, string(os.PathSeparator)) {
-				path := strings.SplitN(query, string(os.PathSeparator), 2)
-				dir = string(os.PathSeparator) + path[0] + string(os.PathSeparator)
-				file = path[1]
-			}
+		dir := ""
+		file := query
+		if strings.Contains(query, string(os.PathSeparator)) {
+			path := strings.SplitN(query, string(os.PathSeparator), 2)
+			dir = string(os.PathSeparator) + path[0] + string(os.PathSeparator)
+			file = path[1]
+		}
 
-			patterns := []string{
-				currentDir + "/" + file + "." + extension,
-				currentDir + "/." + file + "/*" + file + "." + extension,
-				currentDir + "/*" + file + "." + extension,
-				currentDir + "/" + file + "/*" + file + "." + extension}
+		patterns := map[string]string{
+			currentDir + "/" + file + "." + extension:               currentDir + "/",
+			currentDir + "/*" + file + "." + extension:              currentDir + "/",
+			currentDir + "/" + file + "/*" + file + "." + extension: currentDir + "/"}
 
-			if dir != "" {
-				patterns = []string{
-					currentDir + dir + file + "." + extension,
-					currentDir + dir + "." + file + "/*" + file + "." + extension,
-					currentDir + dir + "*" + file + "." + extension,
-					currentDir + dir + file + "/*" + file + "." + extension}
-			}
+		if dir != "" {
+			patterns = map[string]string{
+				currentDir + dir + file + "." + extension:               currentDir + dir,
+				currentDir + dir + "*" + file + "." + extension:         currentDir + dir,
+				currentDir + dir + file + "/*" + file + "." + extension: currentDir + dir}
+		}
 
-			fmt.Println(dir, file)
-			fmt.Println("patterns:", patterns)
-
-			for _, pattern := range patterns {
-				if configFiles, filesErr := filepath.Glob(pattern); filesErr == nil && len(configFiles) > 0 {
-					for _, configFile := range configFiles {
-						if contents, readErr := ioutil.ReadFile(configFile); readErr == nil {
-							// Sweet. We found an config file. Lets save it off and return
-							combinedContents = append(combinedContents, []byte("\n\n")...)
-							combinedContents = append(combinedContents, contents...)
-						}
+		for pattern, dirToUse := range patterns {
+			if configFiles, filesErr := filepath.Glob(pattern); filesErr == nil && len(configFiles) > 0 {
+				for _, configFile := range configFiles {
+					if contents, readErr := ioutil.ReadFile(configFile); readErr == nil {
+						// Sweet. We found an config file. Lets save it off and return
+						combinedContents = append(combinedContents, []byte("\n\n")...)
+						combinedContents = append(combinedContents, contents...)
 					}
-					return currentDir, combinedContents, nil
 				}
-			}
+				currentDir = dirToUse
 
-			currentDir = path.Dir(currentDir)
-			if currentDir == "/" {
-				// We've gone too far ...
-				break
+				// Are we inside the folder we are looking? If so, escape out of it ...
+				base := filepath.Base(currentDir)
+				if base == file && len(configFiles) >= 2 {
+					currentDir = filepath.Dir(filepath.Dir(currentDir))
+				}
+
+				return currentDir, combinedContents, nil
 			}
+		}
+
+		currentDir = filepath.Dir(currentDir)
+
+		if currentDir == "/" {
+			// We've gone too far ...
+			break
 		}
 	}
 	// We didn't find anything. /cry
