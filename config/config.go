@@ -53,7 +53,7 @@ func FindAndCombine(currentDir, query, extension string) (string, []byte, error)
 					currentDir = filepath.Dir(filepath.Dir(currentDir))
 				}
 
-				return currentDir, combinedContents, nil
+				return path.Clean(currentDir), combinedContents, nil
 			}
 		}
 
