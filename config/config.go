@@ -4,9 +4,25 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/mitchellh/go-homedir"
 )
+
+// Home directory config file
+func Home(query, extension string) ([]byte, error) {
+	h, _ := homedir.Dir()
+	h += h + "/" + query + "/" + query + extension
+
+	if _, err := os.Stat(h); err == nil {
+		if contents, err := ioutil.ReadFile(h); err == nil {
+			return contents, nil
+		}
+	}
+	return nil, nil
+}
 
 // FindAndCombine will go up directories looking for a file + extension and combine all the files into one []byte{}
 func FindAndCombine(currentDir, query, extension string) (string, []byte, error) {
